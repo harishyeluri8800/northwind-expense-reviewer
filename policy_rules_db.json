@@ -1,0 +1,82 @@
+{
+  "policies": [
+    {
+      "id": "POL-001",
+      "title": "Meal Allowances - Solo Travel",
+      "section": "3.1",
+      "text": "Per-diem meal allowances for solo travel. Breakfast: Tier 1 $31, Tier 2 $25, Tier 3 $20. Lunch: Tier 1 $44, Tier 2 $35, Tier 3 $30. Dinner: Tier 1 $94, Tier 2 $75, Tier 3 $60. Alcoholic beverages are not reimbursable as part of meal expenses."
+    },
+    {
+      "id": "POL-002",
+      "title": "City Tier Classification",
+      "section": "3.1.1",
+      "text": "Tier 1 cities (highest cost): New York, San Francisco, Boston, Washington DC, Los Angeles, Seattle, London, Zurich, Tokyo, Singapore. Tier 2 cities: Chicago, Denver, Austin, Dallas, Miami, Phoenix, Atlanta, San Diego. All other cities are Tier 3."
+    },
+    {
+      "id": "POL-003",
+      "title": "Lodging Limits",
+      "section": "3.2",
+      "text": "Maximum nightly lodging rate: Tier 1 cities $350/night, Tier 2 cities $250/night, all other locations $175/night. Rates are inclusive of taxes and fees. Hotel loyalty program points may be kept by the employee."
+    },
+    {
+      "id": "POL-004",
+      "title": "Air Travel Policy",
+      "section": "3.3",
+      "text": "Economy class is required for all domestic and international flights. Premium economy is permitted for flights of 6 hours or more. Business class is permitted only for international flights of 10 hours or more with prior VP approval. First class travel is never reimbursable under any circumstances."
+    },
+    {
+      "id": "POL-005",
+      "title": "Ground Transportation",
+      "section": "3.4",
+      "text": "Taxi, rideshare (Uber, Lyft), and public transit are fully reimbursable. Personal vehicle mileage reimbursed at the current IRS rate ($0.655/mile). Car rentals require prior manager approval; economy or compact class only. Luxury or premium vehicle rentals are not reimbursable."
+    },
+    {
+      "id": "POL-006",
+      "title": "Client Entertainment",
+      "section": "4.1",
+      "text": "Client entertainment meals: maximum $80/person for lunch, $100/person for client-facing lunch, $150/person for dinner, $187/person for client-facing dinner. VP approval required for expenses exceeding $100/person at lunch or $150/person at dinner. Must document: attendee names, titles, company, and business purpose."
+    },
+    {
+      "id": "POL-007",
+      "title": "Team Meals",
+      "section": "4.2",
+      "text": "Team meals during business travel: lunch $35/person, dinner $75/person (Tier 2 rates apply as default). Director approval required for team meals exceeding $500 total. Alcohol at team meals limited to $20/person and must be pre-approved."
+    },
+    {
+      "id": "POL-008",
+      "title": "Approval Thresholds",
+      "section": "5.1",
+      "text": "Single expense approval thresholds: up to $500 requires manager approval (Grade 7+), $500-$2000 requires director approval (Grade 9+), $2000-$5000 requires VP approval (Grade 11+), over $5000 requires SVP approval (Grade 13+). Pre-approval required for expenses over $1000."
+    },
+    {
+      "id": "POL-009",
+      "title": "Receipt Requirements",
+      "section": "6.1",
+      "text": "Itemized receipts are required for all expenses exceeding $25. Receipts must show: vendor name, date of transaction, itemized list of purchases, total amount, and payment method. Credit card statements alone are not sufficient. Lost receipt affidavits require manager approval and are limited to twice per year."
+    },
+    {
+      "id": "POL-010",
+      "title": "Submission Timeline",
+      "section": "6.2",
+      "text": "Expense reports must be submitted within 30 days of the trip end date. Late submissions (31-60 days) require director approval. Submissions older than 60 days will not be reimbursed except in extraordinary circumstances with VP approval."
+    },
+    {
+      "id": "POL-011",
+      "title": "Non-Reimbursable Expenses",
+      "section": "7.1",
+      "text": "The following are never reimbursable: personal entertainment (movies, personal shopping), spouse/partner/family travel costs, traffic fines or parking violations, first-class upgrades, alcohol beyond approved limits, personal grooming, gym fees (except hotel gym included in room rate), and any expense without a receipt over $25."
+    },
+    {
+      "id": "POL-012",
+      "title": "International Travel",
+      "section": "8.1",
+      "text": "International travel requires VP pre-approval for all trips. Currency conversion at the published corporate rate on the date of expenditure. Foreign transaction fees are reimbursable. Travel insurance is mandatory and will be arranged by the corporate travel desk."
+    },
+    {
+      "id": "POL-013",
+      "title": "Conference and Training",
+      "section": "9.1",
+      "text": "Conference registration fees are reimbursable with manager pre-approval. Training materials up to $200 per course are reimbursable. Professional memberships up to $500/year with manager approval. Books and publications up to $100/year without pre-approval."
+    }
+  ]
+}
