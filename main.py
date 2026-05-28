@@ -59,57 +59,68 @@ def init_db() -> None:
     with get_db() as conn:
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS employees (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            grade INTEGER NOT NULL,
-            title TEXT,
-            department TEXT,
-            manager_id TEXT,
-            home_base TEXT
+            id          TEXT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            grade       TEXT NOT NULL,
+            title       TEXT,
+            department  TEXT,
+            manager_id  TEXT REFERENCES employees(id),
+            home_base   TEXT
         );
 
         CREATE TABLE IF NOT EXISTS submissions (
-            id TEXT PRIMARY KEY,
-            employee_id TEXT NOT NULL,
-            trip_purpose TEXT,
-            trip_start_date TEXT,
-            trip_end_date TEXT,
-            status TEXT DEFAULT 'new',
-            created_at TEXT NOT NULL,
-            reviewed_at TEXT,
-            FOREIGN KEY (employee_id) REFERENCES employees(id)
+            id               TEXT PRIMARY KEY,
+            employee_id      TEXT NOT NULL REFERENCES employees(id),
+            trip_purpose     TEXT,
+            trip_start_date  TEXT,
+            trip_end_date    TEXT,
+            status           TEXT DEFAULT 'new',
+            created_at       TEXT NOT NULL,
+            reviewed_at      TEXT
         );
 
         CREATE TABLE IF NOT EXISTS line_items (
-            id TEXT PRIMARY KEY,
-            submission_id TEXT NOT NULL,
-            vendor TEXT,
-            amount REAL,
-            currency TEXT DEFAULT 'USD',
-            category TEXT,
-            receipt_date TEXT,
-            verdict TEXT,
-            confidence REAL,
-            reasoning TEXT,
-            cited_clauses TEXT,
-            human_override_verdict TEXT,
-            human_override_comment TEXT,
-            human_override_at TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (submission_id) REFERENCES submissions(id)
+            id                      TEXT PRIMARY KEY,
+            submission_id           TEXT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+            vendor                  TEXT,
+            amount                  REAL,
+            currency                TEXT DEFAULT 'USD',
+            category                TEXT,
+            receipt_date            TEXT,
+            raw_extracted_text      TEXT,
+            verdict                 TEXT,
+            confidence              REAL,
+            reasoning               TEXT,
+            cited_clauses           TEXT,
+            human_override_verdict  TEXT,
+            human_override_comment  TEXT,
+            human_override_at       TEXT,
+            human_override_by       TEXT REFERENCES employees(id),
+            created_at              TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            submission_id TEXT,
-            line_item_id TEXT,
-            action TEXT NOT NULL,
-            user_id TEXT,
-            details TEXT,
-            created_at TEXT NOT NULL
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            submission_id TEXT REFERENCES submissions(id),
+            line_item_id  TEXT REFERENCES line_items(id),
+            action        TEXT NOT NULL,
+            user_id       TEXT,
+            details       TEXT,
+            created_at    TEXT NOT NULL
         );
+
+        CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department);
+        CREATE INDEX IF NOT EXISTS idx_employees_manager    ON employees(manager_id);
+        CREATE INDEX IF NOT EXISTS idx_submissions_employee ON submissions(employee_id);
+        CREATE INDEX IF NOT EXISTS idx_submissions_status   ON submissions(status);
+        CREATE INDEX IF NOT EXISTS idx_submissions_created  ON submissions(created_at);
+        CREATE INDEX IF NOT EXISTS idx_line_items_submission ON line_items(submission_id);
+        CREATE INDEX IF NOT EXISTS idx_line_items_verdict    ON line_items(verdict);
+        CREATE INDEX IF NOT EXISTS idx_line_items_category   ON line_items(category);
+        CREATE INDEX IF NOT EXISTS idx_audit_submission      ON audit_log(submission_id);
+        CREATE INDEX IF NOT EXISTS idx_audit_action          ON audit_log(action);
+        CREATE INDEX IF NOT EXISTS idx_audit_created         ON audit_log(created_at);
         """)
-        # Seed sample employees if table is empty
         cur = conn.execute("SELECT COUNT(*) FROM employees")
         if cur.fetchone()[0] == 0:
             _seed_employees(conn)
@@ -118,14 +129,15 @@ def init_db() -> None:
 
 def _seed_employees(conn: sqlite3.Connection) -> None:
     employees = [
-        ("NW-00001", "Alice Johnson", 8, "Senior Manager", "Finance", None, "New York"),
-        ("NW-00002", "Bob Smith", 6, "Analyst", "Operations", "NW-00001", "Chicago"),
-        ("NW-00003", "Carol White", 7, "Lead Engineer", "Technology", "NW-00001", "San Francisco"),
-        ("NW-00004", "David Lee", 5, "Coordinator", "Logistics", "NW-00002", "Dallas"),
-        ("NW-00005", "Eva Martinez", 9, "Director", "Strategy", None, "Boston"),
+        ("NW-00001", "Sarah Chen",       "L5", "Senior Account Executive",     "Sales",   "NW-00004", "San Francisco, CA"),
+        ("NW-00002", "Marcus Johnson",   "L4", "Field Sales Representative",   "Sales",   "NW-00004", "Chicago, IL"),
+        ("NW-00003", "Priya Patel",      "L6", "Regional Sales Director",      "Sales",   "NW-00004", "New York, NY"),
+        ("NW-00004", "David Kim",        "VP", "VP of Sales",                  "Sales",   None,       "San Francisco, CA"),
+        ("NW-00005", "Elena Rodriguez",  "L3", "Sales Development Representative", "Sales", "NW-00004", "Austin, TX"),
     ]
     conn.executemany(
-        "INSERT INTO employees VALUES (?,?,?,?,?,?,?)", employees
+        "INSERT INTO employees (id,name,grade,title,department,manager_id,home_base) VALUES (?,?,?,?,?,?,?)",
+        employees
     )
 
 # ---------------------------------------------------------------------------
@@ -373,10 +385,13 @@ Return ONLY valid JSON:
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        return json.loads(raw)
+        result = json.loads(raw)
+        if "confidence" not in result:
+            result["confidence"] = 0.9 if result.get("in_scope") else 0.0
+        return result
     except Exception as exc:
         log.warning("Policy Q&A failed: %s", exc)
-        return {"answer": f"Error: {exc}", "in_scope": False, "cited_clauses": []}
+        return {"answer": f"Error: {exc}", "in_scope": False, "cited_clauses": [], "confidence": 0.0}
 
 # ---------------------------------------------------------------------------
 # Pydantic models
@@ -390,7 +405,7 @@ class NewSubmissionRequest(BaseModel):
 
 
 class OverrideRequest(BaseModel):
-    new_verdict: str
+    verdict: str
     comment: str
     reviewer_id: Optional[str] = "reviewer"
 
@@ -404,7 +419,7 @@ class PolicyQuestionRequest(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "version": "1.0.0", "timestamp": datetime.utcnow().isoformat()}
 
 
 @app.get("/api/employees")
@@ -412,6 +427,25 @@ def list_employees():
     with get_db() as conn:
         rows = conn.execute("SELECT * FROM employees ORDER BY name").fetchall()
     return [dict(r) for r in rows]
+
+
+def _refresh_submission_status(conn: sqlite3.Connection, submission_id: str) -> str:
+    """Recompute and persist submission status based on current line item verdicts."""
+    rows = conn.execute(
+        "SELECT verdict, human_override_verdict FROM line_items WHERE submission_id=?",
+        (submission_id,)
+    ).fetchall()
+    if not rows:
+        return "new"
+    effective = [r["human_override_verdict"] or r["verdict"] for r in rows]
+    if any(v == "rejected" for v in effective):
+        status = "rejected"
+    elif any(v in ("flagged", "ambiguous") for v in effective):
+        status = "flagged"
+    else:
+        status = "approved"
+    conn.execute("UPDATE submissions SET status=? WHERE id=?", (status, submission_id))
+    return status
 
 
 @app.post("/api/submissions/new")
@@ -451,40 +485,54 @@ async def upload_receipt(
             raise HTTPException(status_code=404, detail={"error": "SUBMISSION_NOT_FOUND"})
         emp = conn.execute("SELECT * FROM employees WHERE id=?", (sub["employee_id"],)).fetchone()
 
-    content = await file.read()
-    extracted = extract_receipt_data(content, file.filename, ct)
+    raw_bytes = await file.read()
+    raw_text = raw_bytes.decode("utf-8", errors="replace") if not ct.startswith("image/") else ""
+    extracted = extract_receipt_data(raw_bytes, file.filename, ct)
     verdict_data = evaluate_line_item(extracted, dict(emp), dict(sub))
 
     item_id = "receipt_" + uuid.uuid4().hex[:8]
     now = datetime.utcnow().isoformat()
+    cited_json = json.dumps(verdict_data.get("cited_clauses", []))
 
     with get_db() as conn:
         conn.execute(
             """INSERT INTO line_items
                (id,submission_id,vendor,amount,currency,category,receipt_date,
-                verdict,confidence,reasoning,cited_clauses,created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                raw_extracted_text,verdict,confidence,reasoning,cited_clauses,created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 item_id, submission_id,
                 extracted.get("vendor"), extracted.get("amount"), extracted.get("currency", "USD"),
                 extracted.get("category"), extracted.get("receipt_date"),
+                raw_text,
                 verdict_data.get("verdict"), verdict_data.get("confidence"),
                 verdict_data.get("reasoning"),
-                json.dumps(verdict_data.get("cited_clauses", [])),
+                cited_json,
                 now,
             ),
         )
         conn.execute(
             "INSERT INTO audit_log (submission_id,line_item_id,action,details,created_at) VALUES (?,?,?,?,?)",
-            (submission_id, item_id, "receipt_uploaded",
+            (submission_id, item_id, "ai_evaluation_complete",
              json.dumps({**extracted, "verdict": verdict_data.get("verdict")}), now),
         )
+        new_status = _refresh_submission_status(conn, submission_id)
         conn.commit()
 
     return {
         "line_item_id": item_id,
-        "extracted": extracted,
-        "verdict": verdict_data,
+        "vendor": extracted.get("vendor"),
+        "amount": extracted.get("amount"),
+        "currency": extracted.get("currency", "USD"),
+        "category": extracted.get("category"),
+        "receipt_date": extracted.get("receipt_date"),
+        "verdict": verdict_data.get("verdict"),
+        "confidence": verdict_data.get("confidence"),
+        "reasoning": verdict_data.get("reasoning"),
+        "cited_clauses": verdict_data.get("cited_clauses", []),
+        "human_override_verdict": None,
+        "human_override_comment": None,
+        "submission_status": new_status,
     }
 
 
@@ -505,9 +553,21 @@ def get_submission(submission_id: str):
         d["cited_clauses"] = json.loads(d.get("cited_clauses") or "[]")
         line_items.append(d)
 
+    sub_dict = dict(sub)
     return {
-        "submission": dict(sub),
-        "employee": dict(emp) if emp else None,
+        "id": sub_dict["id"],
+        "employee_id": sub_dict["employee_id"],
+        "employee_name": emp["name"] if emp else None,
+        "employee_grade": emp["grade"] if emp else None,
+        "employee_title": emp["title"] if emp else None,
+        "employee_department": emp["department"] if emp else None,
+        "employee_home_base": emp["home_base"] if emp else None,
+        "trip_purpose": sub_dict["trip_purpose"],
+        "trip_start_date": sub_dict["trip_start_date"],
+        "trip_end_date": sub_dict["trip_end_date"],
+        "status": sub_dict["status"],
+        "created_at": sub_dict["created_at"],
+        "reviewed_at": sub_dict["reviewed_at"],
         "line_items": line_items,
     }
 
@@ -518,6 +578,8 @@ def list_submissions(
     status: Optional[str] = None,
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
 ):
     query = "SELECT s.*, e.name as employee_name FROM submissions s JOIN employees e ON s.employee_id=e.id WHERE 1=1"
     params = []
@@ -533,18 +595,33 @@ def list_submissions(
     if to_date:
         query += " AND s.created_at<=?"
         params.append(to_date)
-    query += " ORDER BY s.created_at DESC"
+    query += " ORDER BY s.created_at DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
 
     with get_db() as conn:
         rows = conn.execute(query, params).fetchall()
-    return [dict(r) for r in rows]
+        results = []
+        for r in rows:
+            d = dict(r)
+            counts = conn.execute(
+                "SELECT COUNT(*) as total, "
+                "SUM(CASE WHEN (COALESCE(human_override_verdict,verdict)) IN ('flagged','rejected','ambiguous') THEN 1 ELSE 0 END) as flagged "
+                "FROM line_items WHERE submission_id=?",
+                (d["id"],)
+            ).fetchone()
+            d["line_item_count"] = counts["total"] or 0
+            d["flagged_count"] = counts["flagged"] or 0
+            results.append(d)
+    return results
 
 
 @app.post("/api/submissions/{submission_id}/line_items/{line_item_id}/override")
 def override_verdict(submission_id: str, line_item_id: str, req: OverrideRequest):
     valid_verdicts = {"compliant", "flagged", "rejected", "ambiguous"}
-    if req.new_verdict not in valid_verdicts:
+    if req.verdict not in valid_verdicts:
         raise HTTPException(status_code=400, detail={"error": "INVALID_VERDICT"})
+    if req.verdict == "rejected" and not req.comment.strip():
+        raise HTTPException(status_code=400, detail={"error": "COMMENT_REQUIRED_FOR_REJECTED"})
 
     with get_db() as conn:
         item = conn.execute(
@@ -557,9 +634,9 @@ def override_verdict(submission_id: str, line_item_id: str, req: OverrideRequest
         now = datetime.utcnow().isoformat()
         conn.execute(
             """UPDATE line_items SET
-               human_override_verdict=?, human_override_comment=?, human_override_at=?
+               human_override_verdict=?, human_override_comment=?, human_override_at=?, human_override_by=?
                WHERE id=?""",
-            (req.new_verdict, req.comment, now, line_item_id),
+            (req.verdict, req.comment, now, req.reviewer_id, line_item_id),
         )
         conn.execute(
             """INSERT INTO audit_log
@@ -570,15 +647,23 @@ def override_verdict(submission_id: str, line_item_id: str, req: OverrideRequest
                 req.reviewer_id,
                 json.dumps({
                     "original_verdict": item["verdict"],
-                    "new_verdict": req.new_verdict,
+                    "new_verdict": req.verdict,
                     "comment": req.comment,
                 }),
                 now,
             ),
         )
+        new_status = _refresh_submission_status(conn, submission_id)
         conn.commit()
 
-    return {"success": True, "line_item_id": line_item_id, "new_verdict": req.new_verdict}
+    return {
+        "line_item_id": line_item_id,
+        "original_verdict": item["verdict"],
+        "human_override_verdict": req.verdict,
+        "human_override_comment": req.comment,
+        "override_at": now,
+        "submission_status": new_status,
+    }
 
 
 @app.post("/api/policy/ask")
