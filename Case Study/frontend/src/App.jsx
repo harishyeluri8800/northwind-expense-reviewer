@@ -50,7 +50,7 @@ function LineItemCard({ item, submissionId, onOverride }) {
     try {
       await apiFetch(`/api/submissions/${submissionId}/line_items/${item.id}/override`, {
         method: 'POST',
-        body: JSON.stringify({ new_verdict: newVerdict, comment, reviewer_id: 'reviewer' }),
+        body: JSON.stringify({ verdict: newVerdict, comment, reviewer_id: 'reviewer' }),
       });
       setShowOverride(false);
       onOverride();
@@ -270,13 +270,26 @@ function NewSubmissionView({ setView }) {
               <div className="card-title">Receipt Evaluations ({uploadResults.length})</div>
               {uploadResults.map((r, i) => (
                 r.error
-                  ? <div key={i} className="alert alert-error">❌ {r.file}: {r.error}</div>
-                  : <LineItemCard
-                      key={i}
-                      item={{ ...r.extracted, ...r.verdict, id: r.line_item_id, cited_clauses: r.verdict?.cited_clauses || [] }}
-                      submissionId={submissionId}
-                      onOverride={() => {}}
-                    />
+                    ? <div key={i} className="alert alert-error">❌ {r.file}: {r.error}</div>
+                    : <LineItemCard
+                        key={i}
+                        item={{
+                          id: r.line_item_id,
+                          vendor: r.vendor,
+                          amount: r.amount,
+                          currency: r.currency,
+                          category: r.category,
+                          receipt_date: r.receipt_date,
+                          verdict: r.verdict,
+                          confidence: r.confidence,
+                          reasoning: r.reasoning,
+                          cited_clauses: r.cited_clauses || [],
+                          human_override_verdict: r.human_override_verdict,
+                          human_override_comment: r.human_override_comment,
+                        }}
+                        submissionId={submissionId}
+                        onOverride={() => {}}
+                      />
               ))}
               <button className="btn btn-secondary" style={{ marginTop: '.5rem' }} onClick={() => setView('history')}>
                 View Full History →
@@ -380,7 +393,15 @@ function DetailView({ submissionId, setView }) {
   if (loading) return <div className="empty-state"><span className="spinner" /></div>;
   if (!data) return <div className="empty-state">Submission not found.</div>;
 
-  const { submission, employee, line_items } = data;
+  const { line_items } = data;
+  const submission = data;
+  const employee = {
+    name: data.employee_name,
+    grade: data.employee_grade,
+    title: data.employee_title,
+    department: data.employee_department,
+    home_base: data.employee_home_base,
+  };
 
   return (
     <div>

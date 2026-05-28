@@ -1,0 +1,161 @@
+{
+  "verdict_tests": [
+    {
+      "description": "Compliant NYC dinner under limit",
+      "vendor": "Ruth's Chris Steakhouse",
+      "amount": 85.00,
+      "category": "meal",
+      "receipt_date": "2025-01-11",
+      "trip_purpose": "Client meeting in New York",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "compliant"
+    },
+    {
+      "description": "Over-limit NYC solo dinner",
+      "vendor": "Le Bernardin",
+      "amount": 210.00,
+      "category": "meal",
+      "receipt_date": "2025-01-11",
+      "trip_purpose": "Team dinner in New York",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "rejected"
+    },
+    {
+      "description": "Compliant Tier 1 NYC lodging under cap",
+      "vendor": "Marriott Midtown NYC",
+      "amount": 320.00,
+      "category": "lodging",
+      "receipt_date": "2025-01-10",
+      "trip_purpose": "Client visit in New York",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "compliant"
+    },
+    {
+      "description": "Over-limit NYC lodging",
+      "vendor": "The Plaza Hotel",
+      "amount": 580.00,
+      "category": "lodging",
+      "receipt_date": "2025-01-11",
+      "trip_purpose": "Client visit in New York",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "rejected"
+    },
+    {
+      "description": "Compliant Tier 2 Chicago lodging",
+      "vendor": "Marriott Chicago",
+      "amount": 235.00,
+      "category": "lodging",
+      "receipt_date": "2025-01-11",
+      "trip_purpose": "Sales conference in Chicago",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "compliant"
+    },
+    {
+      "description": "Economy flight — compliant",
+      "vendor": "Delta Airlines economy class NYC to Chicago",
+      "amount": 420.00,
+      "category": "air_travel",
+      "receipt_date": "2025-01-10",
+      "description": "Economy class airfare",
+      "trip_purpose": "Conference travel",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-14",
+      "expected_verdict": "compliant"
+    },
+    {
+      "description": "First class flight — always rejected",
+      "vendor": "Delta Airlines first class",
+      "amount": 8000.00,
+      "category": "air_travel",
+      "receipt_date": "2025-01-10",
+      "description": "First class NYC to Los Angeles",
+      "trip_purpose": "Conference travel",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-14",
+      "expected_verdict": "rejected"
+    },
+    {
+      "description": "Compliant taxi/rideshare",
+      "vendor": "Uber",
+      "amount": 38.00,
+      "category": "ground_transport",
+      "receipt_date": "2025-01-11",
+      "description": "Rideshare airport to hotel",
+      "trip_purpose": "Client meeting",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "compliant"
+    },
+    {
+      "description": "Alcohol-only receipt — non-reimbursable",
+      "vendor": "Hotel Minibar",
+      "amount": 45.00,
+      "category": "meal",
+      "receipt_date": "2025-01-11",
+      "description": "Minibar alcohol charges only",
+      "trip_purpose": "Business trip",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-12",
+      "expected_verdict": "rejected"
+    },
+    {
+      "description": "Compliant SF breakfast under limit",
+      "vendor": "Blue Bottle Coffee",
+      "amount": 28.00,
+      "category": "meal",
+      "receipt_date": "2025-01-10",
+      "description": "Breakfast in San Francisco",
+      "trip_purpose": "Sales meeting in SF",
+      "trip_start_date": "2025-01-10",
+      "trip_end_date": "2025-01-10",
+      "expected_verdict": "compliant"
+    }
+  ],
+  "qa_tests": [
+    {
+      "question": "What is the maximum lodging rate in New York?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "Can I expense first class flights?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "What is the capital of France?",
+      "expected_in_scope": false
+    },
+    {
+      "question": "How much can I spend on a client dinner per person?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "What is the stock price of Northwind?",
+      "expected_in_scope": false
+    },
+    {
+      "question": "Do I need receipts for expenses under $25?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "Can I fly business class on a 12-hour flight to London?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "What is the meal per diem in Chicago?",
+      "expected_in_scope": true
+    },
+    {
+      "question": "Who is the CEO of Northwind?",
+      "expected_in_scope": false
+    },
+    {
+      "question": "How long do I have to submit expenses after a trip?",
+      "expected_in_scope": true
+    }
+  ]
+}
